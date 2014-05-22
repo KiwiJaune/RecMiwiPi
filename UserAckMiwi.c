@@ -17,8 +17,14 @@ ACK Buffer
 //Indice du message bloquant 10 ou 11 pour l'envoi
 unsigned char indiceBloquantAlt[NB_CANAUX];
 
+//Indice du message buffer 10 ou 11 pour l'envoi
+unsigned char indiceBufferAlt[NB_CANAUX];
+
 //Indice du message bloquant 10 ou 11 pour la reception
 unsigned char previousIndiceBloquantAltRecu[NB_CANAUX];
+
+//Indice du message buffer 10 ou 11 pour la reception
+unsigned char previousIndiceBufferAltRecu[NB_CANAUX];
 
 //Flag de renvoi messages non acquite
 char flagEnvoiBuffer[NB_CANAUX];
@@ -143,12 +149,17 @@ void EnvoiMiwi(char destinataire, char bloquant, Trame trame)
 	
 	if(!bloquant)
 	{
+		//Alternance des indices messages bloquant
+		if(indiceBufferAlt[indiceCanal] == BUFFER_A)
+			indiceBufferAlt[indiceCanal] = BUFFER_B;
+		else indiceBufferAlt[indiceCanal] = BUFFER_A;
+		
 		//Copie de la trame dans trameBuffer
 		for(i=0;i<trame.nbChar;i++)
 		{
 			trameBuffer[indiceCanal].message[i+2] = trame.message[i];
 		}
-		trameBuffer[indiceCanal].message[0] = BUFFER;
+		trameBuffer[indiceCanal].message[0] = indiceBufferAlt[indiceCanal];
 		trameBuffer[indiceCanal].message[1] = MY_SHORT_ADDRESS;
 		trameBuffer[indiceCanal].nbChar = trame.nbChar + 2;
 		
@@ -171,7 +182,6 @@ void EnvoiMiwi(char destinataire, char bloquant, Trame trame)
 		}
 		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[0] = indiceBloquantAlt[indiceCanal];
 		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].message[1] = MY_SHORT_ADDRESS;
-		
 		trameBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]].nbChar = trame.nbChar + 2;
 		
 		destinataireBloquant[indiceCanal][indiceLibreBloquant[indiceCanal]] = destinataire;
@@ -254,6 +264,7 @@ void ReceptionMiwi(char expediteur, Trame trame)
 	int i;
 	unsigned char indiceCanal = 0;
 	unsigned char indiceBloquantAltRecu;
+	unsigned char indiceBufferAltRecu;
 		
 	indiceCanal = CanalAttribution(expediteur);	
 	
@@ -280,19 +291,25 @@ void ReceptionMiwi(char expediteur, Trame trame)
 		}
 		previousIndiceBloquantAltRecu[indiceCanal] = indiceBloquantAltRecu;
 	}
-	else if (trame.message[0] == BUFFER)
+	else if (trame.message[0] == BUFFER_A || trame.message[0] == BUFFER_B)
 	{
 		EnvoiAck(expediteur, trameAckBuffer);
-		trame.message = &trame.message[2];
-		trame.nbChar -= 3;
+		indiceBufferAltRecu = trame.message[0];
 		
-		trameATraiter.nbChar = trame.nbChar;		
-		for(i = 0; i < trame.nbChar; i++)
-		{ 
-			trameATraiter.message[i] = trame.message[i];
+		if(indiceBufferAltRecu != previousIndiceBufferAltRecu[indiceCanal])	
+		{	
+			trame.message = &trame.message[2];
+			trame.nbChar -= 3;
+			
+			trameATraiter.nbChar = trame.nbChar;		
+			for(i = 0; i < trame.nbChar; i++)
+			{ 
+				trameATraiter.message[i] = trame.message[i];
+			}
+			
+			flagDataIsReady = UP;
 		}
-		
-		flagDataIsReady = UP;
+		previousIndiceBufferAltRecu[indiceCanal] = indiceBufferAltRecu;
 	}
 	else if (trame.message[0] == ACK_BLOQUANT)
 		ReceptionAck(expediteur,TRUE);

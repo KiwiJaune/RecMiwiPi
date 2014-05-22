@@ -38,7 +38,8 @@ int main(int argc, char** argv)
 	//Envoi Ack vers PC pour les messages bloquant
 	Trame trameAckUdp;
 	static BYTE messAckUdp[3];
-	messAckUdp[0] = MY_SHORT_ADDRESS;
+	// Pour RecMiwiPi les messages viennent toujours de RecPi = 0xC3
+	messAckUdp[0] = 0xC3;
 	messAckUdp[1] = CMD_ACK_UDP;
 	trameAckUdp.message = messAckUdp;
 	trameAckUdp.nbChar = 3;	
