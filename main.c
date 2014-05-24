@@ -109,10 +109,12 @@ int main(int argc, char** argv)
 
 		if(expediteurAck)
 		{
-			trameAckUdp.message[2] = expediteurAck;
+			// RecPi n'a pas besoin des acquittements du PC
+			/*trameAckUdp.message[2] = expediteurAck;
 			delay(100);
 			EnvoiUserUdp(trameAckUdp);
-			delay(100);
+			delay(100);*/
+			
 		}
 		
 	}
